@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from src.config import DATABASE_URL
+from src.config import DATABASE_URL, BASE_DIR
 from src.database.models import get_session
 from src.web.routes import basic, compare, nl_query
 
@@ -23,6 +23,15 @@ templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "t
 app.include_router(basic.router, prefix="/api", tags=["基础查询"])
 app.include_router(compare.router, prefix="/api", tags=["跨校对比"])
 app.include_router(nl_query.router, prefix="/api", tags=["自然语言查询"])
+
+
+@app.on_event("startup")
+def startup_seed():
+    """首次启动时自动建库并导入数据"""
+    db_path = os.path.join(BASE_DIR, "data", "cultivation.db")
+    if not os.path.exists(db_path):
+        from src.database.seed import seed_all
+        seed_all()
 
 
 def get_db():
