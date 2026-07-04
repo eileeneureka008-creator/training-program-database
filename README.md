@@ -2,6 +2,9 @@
 
 西南财经大学 & 上海财经大学培养方案查询与跨校对比系统。
 
+**在线演示：** https://training-program-database.onrender.com  
+**API 文档：** https://training-program-database.onrender.com/docs
+
 ## 功能
 
 ### 子模块 A：培养方案数据库
