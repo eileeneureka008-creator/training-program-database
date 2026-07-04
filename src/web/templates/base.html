@@ -241,13 +241,13 @@
         <a href="/docs" target="_blank">API文档</a>
         <div class="emblem-group">
             <!-- 西南财经大学校徽（官方PNG） -->
-            <div class="emblem-item swufe">
+            <div class="emblem-item swufe" onclick="showPlan('SWUFE')" title="点击查看西南财经大学培养方案">
                 <img class="logo-img" src="https://cdn.urongda.com//images/normal/medium/southwestern-university-of-finance-and-economics-logo-1024px.png"
                      alt="SWUFE" onerror="this.style.display='none'">
                 <div class="info"><div class="zh">西南财经大学</div><div class="en">SWUFE · 1925</div></div>
             </div>
             <!-- 上海财经大学校徽（官方PNG） -->
-            <div class="emblem-item sufe">
+            <div class="emblem-item sufe" onclick="showPlan('SUFE')" title="点击查看上海财经大学培养方案">
                 <img class="logo-img" src="https://cdn.urongda.com//images/normal/medium/shanghai-university-of-finance-and-economics-logo-1024px.png"
                      alt="SUFE" onerror="this.style.display='none'">
                 <div class="info"><div class="zh">上海财经大学</div><div class="en">SUFE · 1917</div></div>
@@ -258,5 +258,51 @@
     <div class="container">
         {% block content %}{% endblock %}
     </div>
+
+    <!-- ===== 培养方案弹窗 ===== -->
+    <div id="planModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+        background:rgba(0,0,0,0.55);z-index:200;justify-content:center;align-items:center;"
+        onclick="if(event.target===this)closePlan()">
+        <div style="background:#fff;border-radius:16px;padding:28px;max-width:700px;width:90%;max-height:80vh;
+            overflow-y:auto;position:relative;animation:fadeInUp 0.3s ease;">
+            <button onclick="closePlan()" style="position:absolute;top:12px;right:16px;
+                background:none;border:none;font-size:24px;cursor:pointer;color:#999;">&times;</button>
+            <h2 id="planTitle" style="margin-bottom:20px;color:#1a3a4a;"></h2>
+            <div id="planContent"></div>
+        </div>
+    </div>
+
+    <script>
+    async function showPlan(uni) {
+        document.getElementById('planModal').style.display='flex';
+        document.getElementById('planTitle').textContent='加载中...';
+        document.getElementById('planContent').innerHTML='<p style="color:#999;">⏳ 正在获取培养方案数据...</p>';
+        try {
+            const resp = await fetch('/api/schools');
+            const data = await resp.json();
+            const schools = data.data.filter(s => s.university_name.includes(uni==='SWUFE'?'西南':'上海'));
+            const uniName = uni==='SWUFE'?'西南财经大学':'上海财经大学';
+            document.getElementById('planTitle').textContent = '📋 '+uniName+' 培养方案概览';
+            let html = '';
+            for (const s of schools) {
+                const planResp = await fetch('/api/schools/'+s.id+'/plans-overview');
+                const planData = await planResp.json();
+                if (planData.status!=='ok') continue;
+                html += '<h3 style="color:#1a5276;margin-top:16px;">🏫 '+s.name+'</h3>';
+                html += '<table><tr><th>专业</th><th>代码</th><th>学位</th><th>总学分</th><th>必修课</th><th>选修课</th></tr>';
+                for (const m of planData.data.majors) {
+                    html += '<tr><td><strong>'+m.major_name+'</strong></td><td>'+m.code+'</td><td>'+m.degree_type+'</td><td>'+m.total_credits+'</td><td>'+m.required_courses_count+'</td><td>'+m.elective_courses_count+'</td></tr>';
+                }
+                html += '</table>';
+            }
+            document.getElementById('planContent').innerHTML = html || '<p>暂无数据</p>';
+        } catch(e) {
+            document.getElementById('planContent').innerHTML = '<p class="error">加载失败: '+e.message+'</p>';
+        }
+    }
+    function closePlan() {
+        document.getElementById('planModal').style.display='none';
+    }
+    </script>
 </body>
 </html>
