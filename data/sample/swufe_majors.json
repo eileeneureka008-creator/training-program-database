@@ -1,0 +1,11 @@
+[
+  {"name": "金融学", "code": "020301K", "school": "金融学院", "degree_type": "学士", "duration": "4年", "total_credits": 165},
+  {"name": "金融工程", "code": "020302", "school": "金融学院", "degree_type": "学士", "duration": "4年", "total_credits": 168},
+  {"name": "投资学", "code": "020304", "school": "金融学院", "degree_type": "学士", "duration": "4年", "total_credits": 163},
+  {"name": "会计学", "code": "120203K", "school": "会计学院", "degree_type": "学士", "duration": "4年", "total_credits": 160},
+  {"name": "财务管理", "code": "120204", "school": "会计学院", "degree_type": "学士", "duration": "4年", "total_credits": 162},
+  {"name": "审计学", "code": "120207", "school": "会计学院", "degree_type": "学士", "duration": "4年", "total_credits": 161},
+  {"name": "经济学", "code": "020101", "school": "经济学院", "degree_type": "学士", "duration": "4年", "total_credits": 160},
+  {"name": "国际经济与贸易", "code": "020401", "school": "经济学院", "degree_type": "学士", "duration": "4年", "total_credits": 163},
+  {"name": "统计学", "code": "071201", "school": "统计学院", "degree_type": "学士", "duration": "4年", "total_credits": 165}
+]

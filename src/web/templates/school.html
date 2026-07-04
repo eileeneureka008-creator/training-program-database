@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}学院概览 - 培养方案数据库系统{% endblock %}
+{% block content %}
+
+<h2>学院概览</h2>
+
+<div class="card">
+    <h3>选择学院</h3>
+    <div class="flex-row">
+        <div class="form-group">
+            <label>学院</label>
+            <select id="schoolSelect" onchange="loadSchool()">
+                <option value="">-- 请选择学院 --</option>
+            </select>
+        </div>
+    </div>
+    <div id="schoolOverview" style="margin-top:16px;"></div>
+</div>
+
+<script>
+fetch('/api/schools').then(r=>r.json()).then(d=>{
+    const sel = document.getElementById('schoolSelect');
+    d.data.forEach(s=>{sel.innerHTML+=`<option value="${s.id}">${s.name} (${s.university_name})</option>`;});
+});
+
+function loadSchool() {
+    const id = document.getElementById('schoolSelect').value;
+    if (!id) return;
+    document.getElementById('schoolOverview').innerHTML='加载中...';
+    fetch('/api/schools/'+id+'/plans-overview').then(r=>r.json()).then(d=>{
+        if (d.status!='ok') return;
+        let info = d.data;
+        let html=`<h4>${info.school_name} - ${info.university_name}</h4>`;
+        html+='<table><tr><th>专业名称</th><th>专业代码</th><th>学位</th><th>学制</th><th>总学分</th><th>必修课数</th><th>选修课数</th></tr>';
+        info.majors.forEach(m=>{
+            html+=`<tr><td><strong>${m.major_name}</strong></td><td>${m.code||''}</td><td>${m.degree_type||''}</td><td>${m.duration||''}</td><td>${m.total_credits}</td><td>${m.required_courses_count}</td><td>${m.elective_courses_count}</td></tr>`;
+        });
+        html+='</table><p class="result-count">共 '+info.majors.length+' 个专业</p>';
+        document.getElementById('schoolOverview').innerHTML=html;
+    });
+}
+</script>
+{% endblock %}

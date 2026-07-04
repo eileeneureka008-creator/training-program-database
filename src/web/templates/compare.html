@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}跨校对比 - 培养方案数据库系统{% endblock %}
+{% block content %}
+
+<h2>跨校对比分析</h2>
+<p style="color:#666;margin-bottom:16px;">对比西南财经大学与上海财经大学相同专业的培养方案。</p>
+
+<div class="card">
+    <h3>选择对比专业</h3>
+    <div class="flex-row">
+        <div class="form-group">
+            <label>专业名称</label>
+            <select id="compareMajor">
+                <option value="">-- 请选择专业 --</option>
+                <option value="金融学">金融学</option>
+                <option value="金融工程">金融工程</option>
+                <option value="会计学">会计学</option>
+                <option value="财务管理">财务管理</option>
+                <option value="经济学">经济学</option>
+                <option value="国际经济与贸易">国际经济与贸易</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" onclick="runCompare()">对比</button>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="card" id="compareCourses"></div>
+    <div class="card" id="compareCredits"></div>
+</div>
+<div class="card" id="compareStructure"></div>
+
+<script>
+function runCompare() {
+    const major = document.getElementById('compareMajor').value;
+    if (!major) return;
+
+    document.getElementById('compareCourses').innerHTML='<h4>课程对比</h4>加载中...';
+    document.getElementById('compareCredits').innerHTML='<h4>学分对比</h4>加载中...';
+    document.getElementById('compareStructure').innerHTML='<h4>课程结构对比</h4>加载中...';
+
+    // 课程对比
+    fetch('/api/compare/courses?major_name='+encodeURIComponent(major)).then(r=>r.json()).then(d=>{
+        if (d.status!='ok') { document.getElementById('compareCourses').innerHTML='<h4>课程对比</h4><p class="error">'+JSON.stringify(d.data)+'</p>'; return; }
+        let info=d.data;
+        if (info.error) { document.getElementById('compareCourses').innerHTML='<h4>课程对比</h4><p class="error">'+info.error+'</p>'; return; }
+        let html='<h4>课程设置对比</h4>';
+        html+=`<p>西南财经大学 (${major}): 总学分 ${info.swufe_info.total_credits}, ${info.swufe_info.course_count} 门课</p>`;
+        html+=`<p>上海财经大学 (${major}): 总学分 ${info.sufe_info.total_credits}, ${info.sufe_info.course_count} 门课</p>`;
+        html+=`<p>共同课程: <strong>${info.common_count}</strong> | 仅西财: <strong>${info.swufe_only_count}</strong> | 仅上财: <strong>${info.sufe_only_count}</strong></p>`;
+        if (info.common_courses.length>0) {
+            html+='<details><summary>共同课程列表</summary><table><tr><th>课程</th><th>西财学分</th><th>上财学分</th></tr>';
+            info.common_courses.forEach(c=>{html+=`<tr><td>${c.name}</td><td>${c.swufe_credits}</td><td>${c.sufe_credits}</td></tr>`;});
+            html+='</table></details>';
+        }
+        if (info.only_swufe.length>0) html+='<details><summary>仅西南财经大学开设 ('+info.only_swufe.length+'门)</summary><p>'+info.only_swufe.join(', ')+'</p></details>';
+        if (info.only_sufe.length>0) html+='<details><summary>仅上海财经大学开设 ('+info.only_sufe.length+'门)</summary><p>'+info.only_sufe.join(', ')+'</p></details>';
+        document.getElementById('compareCourses').innerHTML=html;
+    });
+
+    // 学分对比
+    fetch('/api/compare/credits?major_name='+encodeURIComponent(major)).then(r=>r.json()).then(d=>{
+        if (d.status!='ok') return;
+        let info=d.data;
+        let html='<h4>学分对比</h4><table><tr><th>学校</th><th>总学分</th><th>必修学分</th><th>选修学分</th></tr>';
+        info.comparisons.forEach(c=>{
+            if (c.error) html+=`<tr><td>${c.university}</td><td colspan="3">${c.error}</td></tr>`;
+            else html+=`<tr><td>${c.university}</td><td><strong>${c.total_credits}</strong></td><td>${c.required_credits}</td><td>${c.elective_credits}</td></tr>`;
+        });
+        html+='</table>';
+        if (info.credit_difference) html+=`<p>学分差值: <strong>${info.credit_difference}</strong></p>`;
+        document.getElementById('compareCredits').innerHTML=html;
+    });
+
+    // 结构对比
+    fetch('/api/compare/structure?major_name='+encodeURIComponent(major)).then(r=>r.json()).then(d=>{
+        if (d.status!='ok') return;
+        let info=d.data;
+        let html='<h4>课程结构对比（按类别统计）</h4><table><tr><th>类别</th><th>西财课程数</th><th>西财学分</th><th>上财课程数</th><th>上财学分</th></tr>';
+        let allCats = new Set([...Object.keys(info.swufe||{}),...Object.keys(info.sufe||{})]);
+        allCats.forEach(cat=>{
+            let sw = info.swufe[cat]||{course_count:0,credits:0};
+            let su = info.sufe[cat]||{course_count:0,credits:0};
+            html+=`<tr><td>${cat||'其他'}</td><td>${sw.course_count}</td><td>${sw.credits}</td><td>${su.course_count}</td><td>${su.credits}</td></tr>`;
+        });
+        html+='</table>';
+        document.getElementById('compareStructure').innerHTML=html;
+    });
+}
+</script>
+{% endblock %}

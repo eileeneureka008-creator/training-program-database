@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}专业查询 - 培养方案数据库系统{% endblock %}
+{% block content %}
+
+<h2>专业查询</h2>
+
+<div class="card">
+    <h3>选择专业</h3>
+    <div class="flex-row">
+        <div class="form-group">
+            <label>专业</label>
+            <select id="majorSelect" onchange="loadMajor()">
+                <option value="">-- 请选择专业 --</option>
+            </select>
+        </div>
+    </div>
+    <div id="majorInfo" style="margin-top:16px;"></div>
+    <div id="requiredCourses" style="margin-top:16px;"></div>
+    <div id="creditsInfo" style="margin-top:16px;"></div>
+</div>
+
+<script>
+fetch('/api/majors').then(r=>r.json()).then(d=>{
+    const sel = document.getElementById('majorSelect');
+    d.data.forEach(m=>{sel.innerHTML+=`<option value="${m.id}">${m.name} (${m.university_name} - ${m.school_name})</option>`;});
+});
+
+function loadMajor() {
+    const id = document.getElementById('majorSelect').value;
+    if (!id) return;
+    document.getElementById('majorInfo').innerHTML='加载中...';
+    document.getElementById('requiredCourses').innerHTML='';
+    document.getElementById('creditsInfo').innerHTML='';
+
+    // 必修课
+    fetch('/api/majors/'+id+'/required-courses').then(r=>r.json()).then(d=>{
+        if (d.status!='ok') return;
+        let html = '<h4>必修课列表</h4><table><tr><th>课程编号</th><th>课程名称</th><th>学分</th><th>总学时</th><th>学期</th><th>类别</th></tr>';
+        d.data.forEach(c=>{html+=`<tr><td>${c.code}</td><td>${c.name}</td><td>${c.credits}</td><td>${c.hours_total}</td><td>第${c.semester}学期</td><td><span class="tag">${c.category}</span></td></tr>`;});
+        html+='</table><p class="result-count">共 '+d.data.length+' 门必修课</p>';
+        document.getElementById('requiredCourses').innerHTML=html;
+    });
+
+    // 学分信息
+    fetch('/api/majors/'+id+'/total-credits').then(r=>r.json()).then(d=>{
+        if (d.status!='ok') return;
+        let info = d.data;
+        let html = '<h4>学分统计</h4><table><tr><th>总学分要求</th><th>必修学分合计</th><th>选修学分合计</th></tr>';
+        html+=`<tr><td><strong>${info.total_credits_required}</strong></td><td>${info.required_credits_sum}</td><td>${info.elective_credits_sum}</td></tr></table>`;
+        html+='<h4 style="margin-top:12px;">分类统计</h4><table><tr><th>类别</th><th>课程数</th><th>学分数</th></tr>';
+        info.category_breakdown.forEach(c=>{html+=`<tr><td>${c.category||'-'}</td><td>${c.course_count}</td><td>${c.credits}</td></tr>`;});
+        html+='</table>';
+        document.getElementById('creditsInfo').innerHTML=html;
+        document.getElementById('majorInfo').innerHTML=`<p>专业名称: <strong>${info.major_name}</strong> | 总学分: <strong>${info.total_credits_required}</strong></p>`;
+    });
+}
+</script>
+{% endblock %}

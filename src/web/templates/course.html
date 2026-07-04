@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}课程查询 - 培养方案数据库系统{% endblock %}
+{% block content %}
+
+<h2>课程查询</h2>
+
+<div class="card">
+    <h3>关键词搜索课程</h3>
+    <div style="display:flex;gap:8px;">
+        <input type="text" id="keyword" placeholder="输入课程关键词..." style="flex:1;" onkeydown="if(event.key==='Enter')searchCourses()">
+        <button class="btn btn-primary" onclick="searchCourses()">搜索</button>
+    </div>
+    <div id="searchResults" style="margin-top:16px;"></div>
+</div>
+
+<div class="card">
+    <h3>查看课程详细信息</h3>
+    <div class="flex-row">
+        <div class="form-group">
+            <label>选择课程</label>
+            <select id="courseSelect" onchange="loadCourseInfo()">
+                <option value="">-- 请先搜索并选择课程 --</option>
+            </select>
+        </div>
+    </div>
+    <div id="courseInfo" style="margin-top:16px;"></div>
+    <div id="courseMajors" style="margin-top:16px;"></div>
+</div>
+
+<script>
+function searchCourses() {
+    const kw = document.getElementById('keyword').value;
+    if (!kw) return;
+    document.getElementById('searchResults').innerHTML='搜索中...';
+    fetch('/api/courses/search?keyword='+encodeURIComponent(kw)).then(r=>r.json()).then(d=>{
+        if (d.status!='ok') return;
+        let html = '<h4>搜索结果</h4><table><tr><th>课程编号</th><th>课程名称</th><th>学分</th><th>学时</th><th>类型</th><th>操作</th></tr>';
+        const sel = document.getElementById('courseSelect');
+        sel.innerHTML='<option value="">-- 请选择课程 --</option>';
+        if (d.data.length===0) { html='<p>未找到匹配的课程</p>'; }
+        else {
+            d.data.forEach(c=>{
+                html+=`<tr><td>${c.code}</td><td>${c.name}</td><td>${c.credits}</td><td>${c.hours_total}</td><td><span class="tag">${c.course_type||''}</span></td><td><button class="btn btn-primary" onclick="loadCourse(${c.code})">查看</button></td></tr>`;
+            });
+            html+='</table><p class="result-count">共 '+d.data.length+' 条结果</p>';
+        }
+        document.getElementById('searchResults').innerHTML=html;
+    });
+}
+
+function loadCourse(code) {
+    fetch('/api/courses/'+code+'/info').then(r=>r.json()).then(d=>{
+        if (d.status!='ok') return;
+        let c=d.data;
+        document.getElementById('courseInfo').innerHTML=`
+            <h4>${c.name} ${c.name_en?'('+c.name_en+')':''}</h4>
+            <table><tr><th>课程编号</th><td>${c.code}</td></tr>
+            <tr><th>学分</th><td>${c.credits}</td></tr>
+            <tr><th>理论学时</th><td>${c.hours_theory}</td></tr>
+            <tr><th>实践学时</th><td>${c.hours_practice}</td></tr>
+            <tr><th>总学时</th><td>${c.hours_total}</td></tr>
+            <tr><th>课程类型</th><td>${c.course_type||''}</td></tr>
+            <tr><th>课程描述</th><td>${c.description||''}</td></tr></table>`;
+    });
+    fetch('/api/courses/'+code+'/majors').then(r=>r.json()).then(d=>{
+        if (d.status!='ok') return;
+        let html='<h4>开设此课程的专业</h4><table><tr><th>专业</th><th>学院</th><th>大学</th><th>必修/选修</th></tr>';
+        d.data.forEach(m=>{html+=`<tr><td>${m.major_name}</td><td>${m.school_name}</td><td>${m.university_name}</td><td>${m.is_required?'<span class="tag green">必修</span>':'选修'}</td></tr>`;});
+        html+='</table>';
+        document.getElementById('courseMajors').innerHTML=html;
+    });
+}
+
+function loadCourseInfo() {
+    // placeholder: search for course by name/select after implementing course list
+}
+</script>
+{% endblock %}
